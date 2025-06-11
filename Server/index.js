@@ -8,9 +8,12 @@ const bcrypt = require("bcrypt")
 const userModel = require("./model/User")
 const MongoStore = require ("connect-mongo")
 const session = require("express-session")
-const booking = require("./model/bookingModel")       
+   
 const Booking = require("./model/bookingModel")
 const paymentRoutes = require('./routes/payment');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config()
 console.log("FRONTENDURL",process.env.FRONTENDURL)
@@ -107,7 +110,15 @@ app.get("/user", (req,res) => {
 
 app.post("/addBooking", async(req,res) => {
     try {
-        const newBooking = new Booking(req.body);
+         if (!req.session.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+        const newBooking = new Booking({
+      ...req.body,
+      userId: req.session.user.id,
+      userName: req.session.user.name,
+    });
         await newBooking.save()
         res.status(201).json(newBooking)
         
@@ -117,3 +128,82 @@ app.post("/addBooking", async(req,res) => {
 })
 
 app.use('/api/payment', paymentRoutes);
+
+app.get("/api/bookings/user", async (req, res) => {
+    try {
+        if (!req.session.user || !req.session.user.id ) {
+            return res.status(401).json({error : "User not authenticated"})
+        }
+        const userId = req.session.user.id; 
+        const userBookings = await Booking.find({ userId})
+        res.status(200).json(userBookings)
+    } catch (error) {
+        console.error("Error Fetching user bookings", error)
+        res.status(500).json({error: "Internal server error"})
+    }
+})
+
+app.get("/api/bookings/receipt/:id", async(req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id)
+        if (!booking) return res.status(404).send("Booking not found")
+
+            const doc = new PDFDocument ({ margin: 50 }) 
+            const filename = `receipt_${booking._id}.pdf`
+            res.setHeader('Content-Disposition', `attachment; filename = "${filename}"`)
+            res.setHeader('Content-Type', 'application/pdf')
+            doc.pipe(res) 
+
+      const logoPath = path.join(__dirname, 'assets', 'dbt-logo.png'); // Update path
+    try {
+      doc.image(logoPath, 50, 45, { width: 80 });
+    } catch (e) {
+      // Optional logo fail silently
+    }       
+
+    //          doc.fontSize(20).text("Booking Receipt", { align: 'center' });
+    //  doc.fontSize(22).fillColor('#0e3c68').text('DBT Travel Company', 150, 50, { align: 'right' });         
+    // doc.moveDown(2);
+
+
+     doc
+      .fontSize(18)
+      .fillColor('#000')
+      .text('Booking Receipt', { align: 'center', underline: true });
+    doc.moveDown(1.5);
+
+    const details = [
+      { label: "Name", value: booking.userName },
+      { label: "Tour", value: booking.title },
+      { label: "Departure", value: booking.departure },
+      { label: "Date", value: new Date(booking.date).toLocaleDateString() },
+      { label: "Adults", value: booking.passengers },
+      { label: "Children", value: booking.children },
+      { label: "Total Price", value: `₹${booking.totalPrice}` },
+    ];
+
+    details.forEach(item => {
+      doc
+        .fontSize(12)
+        .fillColor('#333')
+        .text(`${item.label}:`, { continued: true, width: 150 })
+        .fillColor('#000')
+        .text(`${item.value}`);
+      doc.moveDown(0.5);
+    });
+
+    doc.moveDown(2);
+    doc
+      .fontSize(14)
+      .fillColor('#555')
+      .text("Thank you for choosing DBT. We wish you a memorable journey!", {
+        align: 'center',
+        italics: true
+      });
+
+    doc.end();
+    } catch (error) {
+         console.error("PDF generation error:", error);
+    res.status(500).send("Error generating PDF");
+    }
+})

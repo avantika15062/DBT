@@ -55,7 +55,9 @@ const initPayment = async () => {
       order_id: order.id,
       handler: async (response) => {
         alert('Payment successful! ID: ' + response.razorpay_payment_id);
-        await axios.post('http://localhost:3001/addBooking', bookingData);
+        await axios.post('http://localhost:3001/addBooking', bookingData, {
+  withCredentials: true
+});
         navigate('/home', {
           state: {
             bookingSuccess: true,

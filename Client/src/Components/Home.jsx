@@ -6,6 +6,7 @@ import Intro from './Intro';
 import Gallery from './Gallery';
 import TourCard from './TourCard';
 import Services from './Services';
+import SideBarLayout from './SideBarLayout';
 export const Home = () => {
   const location = useLocation()
   const bookingSuccess = location.state?.bookingSuccess
@@ -22,7 +23,7 @@ const user = storedUser ? JSON.parse(storedUser) : null;
         color: 'darkblue',
         backgroundColor: 'Orange',
         borderRadius: '5px',
-       
+       marginLeft: '40px',
         marginBottom: '30px',
         maxWidth: '300px'
 }
@@ -34,6 +35,7 @@ const user = storedUser ? JSON.parse(storedUser) : null;
   }
 
   return (
+   
     <div style={{  paddingTop: '150px',  // ✅ Enough space below fixed navbar
       paddingLeft: '20px',
       paddingRight: '20px',
@@ -53,8 +55,8 @@ const user = storedUser ? JSON.parse(storedUser) : null;
         </div>
       )}
     <Intro/>
-    <h3 style={{fontSize : "1.1rem", fontWeight : 'bold', backgroundColor: 'orange', borderRadius : "999px",display:'inline-block', padding : '10px 22px',fontFamily:'sans-serif'}}>Explore</h3>
-    <h1>Our Featured Tours</h1>
+    <h3 style={{fontSize : "1.1rem", fontWeight : 'bold', backgroundColor: 'orange', borderRadius : "999px",display:'inline-block', padding : '10px 22px',fontFamily:'sans-serif',  marginLeft: '40px' }}>Explore</h3>
+    <h1 style={{marginLeft: '40px'}}>Our Featured Tours</h1>
 
       <div style={{
       
@@ -75,6 +77,7 @@ const user = storedUser ? JSON.parse(storedUser) : null;
  <Services/>
 
     </div>
+ 
     
   )
   
